@@ -39,6 +39,7 @@ class DashboardPage extends StatelessWidget {
               title: 'Gemeenschap',
               onTap: () {
                 // TODO: Navigate to Community page
+                
               },
             ),
             _DashboardCard(

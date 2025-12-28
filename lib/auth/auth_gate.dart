@@ -13,10 +13,10 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
-        print('🔐 AuthGate - ConnectionState: ${snapshot.connectionState}');
-        print('🔐 AuthGate - HasData: ${snapshot.hasData}');
-        print('🔐 AuthGate - IsSignedIn: ${authService.isSignedIn()}');
-        print('🔐 AuthGate - Current User: ${authService.currentUser?.email}');
+        debugPrint('🔐 AuthGate - ConnectionState: ${snapshot.connectionState}');
+        debugPrint('🔐 AuthGate - HasData: ${snapshot.hasData}');
+        debugPrint('🔐 AuthGate - IsSignedIn: ${authService.isSignedIn()}');
+        debugPrint('🔐 AuthGate - Current User: ${authService.currentUser?.email}');
 
         // Show loading while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -29,11 +29,11 @@ class AuthGate extends StatelessWidget {
         
         // Check if user is signed in
         if (snapshot.hasData && authService.isSignedIn()) {
-          print('✅ User is signed in, showing HomePage');
+          debugPrint('✅ User is signed in, showing HomePage');
           return const HomePage();
         }
         
-        print('❌ User not signed in, showing LoginPage');
+        debugPrint('❌ User not signed in, showing LoginPage');
         // Show login page if not signed in
         return const LoginPage();
       },

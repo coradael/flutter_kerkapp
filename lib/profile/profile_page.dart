@@ -20,11 +20,26 @@ class _ProfilePageState extends State<ProfilePage> {
   Profile? _profile;
   bool _loading = true;
   bool _uploading = false;
+  bool _isEditing = false;
+  bool _saving = false;
+  
+  // Text controllers voor edit mode
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -34,12 +49,71 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _profile = profile;
         _loading = false;
+        // Vul controllers met huidige data
+        _fullNameController.text = profile?.fullName ?? '';
+        _emailController.text = profile?.email ?? '';
+        _phoneController.text = profile?.phoneNumber ?? '';
       });
     }
   }
 
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+      // Reset controllers met huidige profiel data
+      _fullNameController.text = _profile?.fullName ?? '';
+      _emailController.text = _profile?.email ?? '';
+      _phoneController.text = _profile?.phoneNumber ?? '';
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _isEditing = false;
+    });
+  }
+
+  Future<void> _saveProfile() async {
+    if (_profile == null) return;
+
+    setState(() => _saving = true);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    final updatedProfile = Profile(
+      id: _profile!.id,
+      email: _emailController.text.trim(),
+      tenantId: _profile!.tenantId,
+      fullName: _fullNameController.text.trim(),
+      phoneNumber: _phoneController.text.trim().isEmpty 
+          ? null 
+          : _phoneController.text.trim(),
+      avatarUrl: _profile!.avatarUrl,
+      role: _profile!.role,
+      createdAt: _profile!.createdAt,
+      updatedAt: DateTime.now(),
+    );
+
+    final success = await _profileService.updateProfile(updatedProfile);
+
+    if (!mounted) return;
+
+    setState(() {
+      _saving = false;
+      if (success) {
+        _profile = updatedProfile;
+        _isEditing = false;
+      }
+    });
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: Text(success ? '✅ Profiel opgeslagen' : '❌ Fout bij opslaan'),
+      ),
+    );
+  }
+
   Future<void> _pickAndUploadAvatar() async {
-    print('🔵 Start picking image...');
+    debugPrint('🔵 Start picking image...');
     final XFile? image = await _imagePicker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 512,
@@ -48,22 +122,22 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (image == null) {
-      print('❌ Image picker cancelled');
+      debugPrint('❌ Image picker cancelled');
       return;
     }
 
-    print('✅ Image picked: ${image.path}');
+    debugPrint('✅ Image picked: ${image.path}');
     setState(() => _uploading = true);
 
     final user = _authService.currentUser;
     if (user == null) {
-      print('❌ No user logged in');
+      debugPrint('❌ No user logged in');
       setState(() => _uploading = false);
       return;
     }
 
-    print('👤 User ID: ${user.id}');
-    print('📤 Starting upload...');
+    debugPrint('👤 User ID: ${user.id}');
+    debugPrint('📤 Starting upload...');
     
     try {
       final avatarUrl = await _storageService.uploadAvatar(
@@ -72,13 +146,13 @@ class _ProfilePageState extends State<ProfilePage> {
       );
 
       if (!mounted) {
-        print('⚠️ Widget unmounted after upload');
+        debugPrint('⚠️ Widget unmounted after upload');
         return;
       }
       final scaffoldMessenger = ScaffoldMessenger.of(context);
 
       if (avatarUrl != null && _profile != null) {
-        print('✅ Avatar uploaded: $avatarUrl');
+        debugPrint('✅ Avatar uploaded: $avatarUrl');
         final updatedProfile = Profile(
           id: _profile!.id,
           email: _profile!.email,
@@ -86,39 +160,40 @@ class _ProfilePageState extends State<ProfilePage> {
           fullName: _profile!.fullName,
           phoneNumber: _profile!.phoneNumber,
           avatarUrl: avatarUrl,
+          role: _profile!.role,
           createdAt: _profile!.createdAt,
           updatedAt: DateTime.now(),
         );
 
-        print('💾 Updating profile in database...');
+        debugPrint('💾 Updating profile in database...');
         final success = await _profileService.updateProfile(updatedProfile);
         
         if (!mounted) {
-          print('⚠️ Widget unmounted after profile update');
+          debugPrint('⚠️ Widget unmounted after profile update');
           return;
         }
         
         if (success) {
-          print('✅ Profile updated successfully');
+          debugPrint('✅ Profile updated successfully');
           setState(() => _profile = updatedProfile);
           scaffoldMessenger.showSnackBar(
             const SnackBar(content: Text('Avatar geüpload!')),
           );
         } else {
-          print('❌ Failed to update profile in database');
+          debugPrint('❌ Failed to update profile in database');
           scaffoldMessenger.showSnackBar(
             const SnackBar(content: Text('Fout bij opslaan avatar')),
           );
         }
       } else {
-        print('❌ Upload failed: avatarUrl=$avatarUrl, profile=${_profile != null}');
+        debugPrint('❌ Upload failed: avatarUrl=$avatarUrl, profile=${_profile != null}');
         scaffoldMessenger.showSnackBar(
           const SnackBar(content: Text('Fout bij uploaden avatar')),
         );
       }
     } catch (e, stackTrace) {
-      print('❌ Exception during upload: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ Exception during upload: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Fout: $e')),
@@ -129,7 +204,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) {
       setState(() => _uploading = false);
     }
-    print('🔵 Upload process finished');
+    debugPrint('🔵 Upload process finished');
   }
 
   @override
@@ -138,6 +213,11 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         title: const Text('Profiel'),
         actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: _startEditing,
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -189,39 +269,147 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  // Profile info
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildInfoRow(
-                            Icons.email,
-                            'Email',
-                            _profile?.email ?? 'Niet beschikbaar',
-                          ),
-                          const Divider(),
-                          _buildInfoRow(
-                            Icons.person,
-                            'Naam',
-                            _profile?.fullName ?? 'Niet ingesteld',
-                          ),
-                          if (_profile?.phoneNumber != null) ...[
-                            const Divider(),
-                            _buildInfoRow(
-                              Icons.phone,
-                              'Telefoon',
-                              _profile!.phoneNumber!,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Profile info - Edit mode of View mode
+                  _isEditing ? _buildEditForm() : _buildProfileInfo(),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildProfileInfo() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow(
+              Icons.email,
+              'Email',
+              _profile?.email ?? 'Niet beschikbaar',
+            ),
+            const Divider(),
+            _buildInfoRow(
+              Icons.person,
+              'Naam',
+              _profile?.fullName ?? 'Niet ingesteld',
+            ),
+            if (_profile?.phoneNumber != null) ...[
+              const Divider(),
+              _buildInfoRow(
+                Icons.phone,
+                'Telefoon',
+                _profile!.phoneNumber!,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditForm() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Naam veld
+            Text(
+              'Naam',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _fullNameController,
+              enabled: !_saving,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Voer je naam in',
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Email veld
+            Text(
+              'E-mail',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _emailController,
+              enabled: !_saving,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'voornaam@voorbeeld.nl',
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Telefoonnummer veld
+            Text(
+              'Telefoonnummer',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _phoneController,
+              enabled: !_saving,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: '+31 6 12345678',
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Acties: Opslaan en Annuleren
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: _saving ? null : _cancelEditing,
+                  icon: const Icon(Icons.close),
+                  label: const Text('Annuleren'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _saving ? null : _saveProfile,
+                  icon: _saving 
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check),
+                  label: Text(_saving ? 'Opslaan...' : 'Opslaan'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

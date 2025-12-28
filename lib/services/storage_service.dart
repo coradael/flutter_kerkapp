@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../core/config/supabase_config.dart';
@@ -10,27 +10,27 @@ class StorageService {
   // Upload avatar - works on both web and mobile (following React Native pattern)
   Future<String?> uploadAvatar(String userId, XFile file) async {
     try {
-      print('📁 Starting file upload for user: $userId');
-      print('📁 File path: ${file.path}');
-      print('📁 Platform: ${kIsWeb ? "Web" : "Mobile"}');
+      debugPrint('📁 Starting file upload for user: $userId');
+      debugPrint('📁 File path: ${file.path}');
+      debugPrint('📁 Platform: ${kIsWeb ? "Web" : "Mobile"}');
       
       // Get file extension
       final fileExt = file.path.split('.').last.split('?').first.toLowerCase();
-      print('📁 File extension: $fileExt');
+      debugPrint('📁 File extension: $fileExt');
       
       // Create unique filename with timestamp
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final filePath = '$userId/$timestamp.$fileExt';
 
-      print('📁 Target path: $filePath');
-      print('📁 Uploading to bucket: $avatarsBucket');
+      debugPrint('📁 Target path: $filePath');
+      debugPrint('📁 Uploading to bucket: $avatarsBucket');
 
       // Read bytes from file (works on both web and mobile)
       final bytes = await file.readAsBytes();
-      print('📁 File size: ${bytes.length} bytes');
+      debugPrint('📁 File size: ${bytes.length} bytes');
 
       // Upload to Supabase Storage
-      final uploadResponse = await _supabase.storage
+      await _supabase.storage
           .from(avatarsBucket)
           .uploadBinary(
             filePath,
@@ -41,19 +41,19 @@ class StorageService {
             ),
           );
 
-      print('✅ File uploaded successfully');
+      debugPrint('✅ File uploaded successfully');
       
       // Get public URL
       final publicUrl = _supabase.storage
           .from(avatarsBucket)
           .getPublicUrl(filePath);
       
-      print('🔗 Public URL: $publicUrl');
+      debugPrint('🔗 Public URL: $publicUrl');
       
       return publicUrl;
     } catch (e, stackTrace) {
-      print('❌ Storage upload error: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ Storage upload error: $e');
+      debugPrint('Stack trace: $stackTrace');
       return null;
     }
   }
@@ -93,7 +93,7 @@ class StorageService {
       
       return true;
     } catch (e) {
-      print('❌ Delete error: $e');
+      debugPrint('❌ Delete error: $e');
       return false;
     }
   }

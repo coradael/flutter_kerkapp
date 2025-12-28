@@ -17,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _loading = false;
 
   Future<void> _login() async {
-    print('🔵 Starting login...');
+    debugPrint('🔵 Starting login...');
     setState(() => _loading = true);
     try {
       final response = await _supabase.auth.signInWithPassword(
@@ -25,22 +25,22 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
       
-      print('✅ Login response received');
-      print('Session: ${response.session != null}');
-      print('User: ${response.user?.email}');
+      debugPrint('✅ Login response received');
+      debugPrint('Session: ${response.session != null}');
+      debugPrint('User: ${response.user?.email}');
       
       setState(() => _loading = false);
 
       if (!mounted) return;
 
       if (response.session != null) {
-        print('✅ Login successful, auth state should change');
+        debugPrint('✅ Login successful, auth state should change');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Succesvol ingelogd ✅')),
         );
       }
     } catch (e) {
-      print('❌ Login error: $e');
+      debugPrint('❌ Login error: $e');
       setState(() => _loading = false);
       
       if (!mounted) return;

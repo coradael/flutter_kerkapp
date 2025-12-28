@@ -1,11 +1,55 @@
 import 'package:flutter/material.dart';
 import '../events/event_list_page.dart';
+import '../tenant/members_page.dart';
+import '../tenant/user_tenant_service.dart';
+import '../auth/auth_service.dart';
+import '../services/local_storage_service.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  final _userTenantService = UserTenantService();
+  final _authService = AuthService();
+  final _localStorage = LocalStorageService();
+  bool _isAdmin = false;
+  bool _checkingAdmin = true;
+  String? _tenantId;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfAdmin();
+  }
+
+  Future<void> _checkIfAdmin() async {
+    final user = _authService.currentUser;
+    final tenantId = await _localStorage.getSelectedTenantId();
+    
+    if (user != null && tenantId != null) {
+      final isAdmin = await _userTenantService.isUserAdmin(user.id, tenantId);
+      setState(() {
+        _isAdmin = isAdmin;
+        _tenantId = tenantId;
+        _checkingAdmin = false;
+      });
+    } else {
+      setState(() => _checkingAdmin = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_checkingAdmin) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kerk App Dashboard'),
@@ -27,6 +71,20 @@ class DashboardPage extends StatelessWidget {
                 );
               },
             ),
+            if (_isAdmin && _tenantId != null)
+              _DashboardCard(
+                icon: Icons.people,
+                title: 'Leden',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MembersPage(tenantId: _tenantId!),
+                    ),
+                  );
+                },
+              ),
             _DashboardCard(
               icon: Icons.book,
               title: 'Bijbel',
@@ -35,11 +93,10 @@ class DashboardPage extends StatelessWidget {
               },
             ),
             _DashboardCard(
-              icon: Icons.people,
+              icon: Icons.people_outline,
               title: 'Gemeenschap',
               onTap: () {
                 // TODO: Navigate to Community page
-                
               },
             ),
             _DashboardCard(
@@ -60,27 +117,32 @@ class _DashboardCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
+  final Color? color;
 
   const _DashboardCard({
     required this.icon,
     required this.title,
     required this.onTap,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
+      color: color?.withValues(alpha: 0.1),
       child: InkWell(
         onTap: onTap,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48),
+            Icon(icon, size: 48, color: color),
             const SizedBox(height: 8),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: color,
+              ),
             ),
           ],
         ),

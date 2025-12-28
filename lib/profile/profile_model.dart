@@ -5,6 +5,7 @@ class Profile {
   final String? fullName;
   final String? phoneNumber;
   final String? avatarUrl;
+  final String? role;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -15,6 +16,7 @@ class Profile {
     this.fullName,
     this.phoneNumber,
     this.avatarUrl,
+    this.role,
     this.createdAt,
     this.updatedAt,
   });
@@ -27,6 +29,7 @@ class Profile {
       fullName: json['full_name'] as String?,
       phoneNumber: json['phone_number'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      role: json['role'] as String?,
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -44,6 +47,7 @@ class Profile {
       'full_name': fullName,
       'phone_number': phoneNumber,
       'avatar_url': avatarUrl,
+      'role': role,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

@@ -5,6 +5,10 @@ class LocalStorageService {
 
   // Save selected tenant ID
   Future<void> saveSelectedTenantId(String tenantId) async {
+    // Don't save empty strings
+    if (tenantId.isEmpty) {
+      throw ArgumentError('Tenant ID cannot be empty');
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySelectedTenantId, tenantId);
   }
@@ -12,7 +16,9 @@ class LocalStorageService {
   // Get selected tenant ID
   Future<String?> getSelectedTenantId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keySelectedTenantId);
+    final tenantId = prefs.getString(_keySelectedTenantId);
+    // Return null if empty string
+    return (tenantId?.isEmpty ?? true) ? null : tenantId;
   }
 
   // Clear selected tenant ID

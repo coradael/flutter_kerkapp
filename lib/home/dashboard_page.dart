@@ -4,6 +4,9 @@ import '../tenant/members_page.dart';
 import '../tenant/user_tenant_service.dart';
 import '../auth/auth_service.dart';
 import '../services/local_storage_service.dart';
+import '../bible/bible_page.dart';
+import '../settings/debug_page.dart';
+import '../community/community_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -53,6 +56,15 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kerk App Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Herlaad Admin Status',
+            onPressed: () {
+              _checkIfAdmin();
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -89,21 +101,30 @@ class _DashboardPageState extends State<DashboardPage> {
               icon: Icons.book,
               title: 'Bijbel',
               onTap: () {
-                // TODO: Navigate to Bible page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BiblePage()),
+                );
               },
             ),
             _DashboardCard(
               icon: Icons.people_outline,
               title: 'Gemeenschap',
               onTap: () {
-                // TODO: Navigate to Community page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CommunityPage()),
+                );
               },
             ),
             _DashboardCard(
               icon: Icons.settings,
               title: 'Instellingen',
               onTap: () {
-                // TODO: Navigate to Settings page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DebugPage()),
+                );
               },
             ),
           ],

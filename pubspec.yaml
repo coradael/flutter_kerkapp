@@ -20,6 +20,12 @@ dependencies:
   # Image picker for avatar uploads
   image_picker: ^1.0.7
 
+  # File picker for documents
+  file_picker: ^8.0.0+1
+
+  # URL launcher for opening files
+  url_launcher: ^6.2.5
+
   # Local storage
   shared_preferences: ^2.2.2
 

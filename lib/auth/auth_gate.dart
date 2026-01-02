@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'login_page.dart';
+import '../tenant/tenant_selection_page.dart';
+import '../services/local_storage_service.dart';
 import '../home/home_page.dart';
 
 class AuthGate extends StatelessWidget {
@@ -9,6 +11,7 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
+    final localStorage = LocalStorageService();
 
     return StreamBuilder(
       stream: authService.authStateChanges,
@@ -29,8 +32,30 @@ class AuthGate extends StatelessWidget {
         
         // Check if user is signed in
         if (snapshot.hasData && authService.isSignedIn()) {
-          debugPrint('✅ User is signed in, showing HomePage');
-          return const HomePage();
+          debugPrint('✅ User is signed in, checking tenant selection...');
+          
+          // Check if tenant is selected
+          return FutureBuilder<String?>(
+            future: localStorage.getSelectedTenantId(),
+            builder: (context, tenantSnapshot) {
+              if (tenantSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              
+              final tenantId = tenantSnapshot.data;
+              debugPrint('🏢 Selected Tenant ID: $tenantId');
+              
+              if (tenantId == null) {
+                debugPrint('➡️ No tenant selected, showing TenantSelectionPage');
+                return const TenantSelectionPage();
+              }
+              
+              debugPrint('✅ Tenant selected, showing HomePage');
+              return const HomePage();
+            },
+          );
         }
         
         debugPrint('❌ User not signed in, showing LoginPage');

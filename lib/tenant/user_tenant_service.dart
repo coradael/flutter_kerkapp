@@ -7,22 +7,47 @@ class UserTenantService {
   // Get all members of a tenant with their profile info
   Future<List<Map<String, dynamic>>> getTenantMembers(String tenantId) async {
     try {
-      final response = await _supabase
+      // First get all user_tenants for this tenant
+      final userTenantsResponse = await _supabase
           .from('user_tenants')
-          .select('''
-            *,
-            profiles:user_id (
-              id,
-              email,
-              full_name,
-              phone_number,
-              avatar_url,
-              role
-            )
-          ''')
+          .select('*')
           .eq('tenant_id', tenantId);
-
-      return List<Map<String, dynamic>>.from(response as List);
+      
+      // Then get profiles for each user
+      final List<Map<String, dynamic>> membersWithProfiles = [];
+      
+      for (final userTenant in userTenantsResponse) {
+        final userId = userTenant['user_id'];
+        final email = userTenant['email'];
+        
+        final profileResponse = await _supabase
+            .from('profiles')
+            .select('id, email, full_name, phone_number, avatar_url, role')
+            .eq('id', userId)
+            .maybeSingle();
+        
+        if (profileResponse != null) {
+          membersWithProfiles.add({
+            ...userTenant,
+            'profiles': profileResponse,
+          });
+        } else {
+          // User has no profile yet (not verified), show with email from user_tenants
+          membersWithProfiles.add({
+            ...userTenant,
+            'profiles': {
+              'id': userId,
+              'email': email,
+              'full_name': 'Niet geverifieerd',
+              'phone_number': null,
+              'avatar_url': null,
+              'role': null,
+            },
+          });
+        }
+      }
+      
+      return membersWithProfiles;
     } catch (e) {
       debugPrint('❌ Error getting tenant members: $e');
       return [];
@@ -105,6 +130,27 @@ class UserTenantService {
     } catch (e) {
       debugPrint('❌ Error sending password reset email: $e');
       return false;
+    }
+  }
+
+  // Get all tenants for a user
+  Future<List<Map<String, dynamic>>> getUserTenants(String userId) async {
+    try {
+      final response = await _supabase
+          .from('user_tenants')
+          .select('''
+            *,
+            tenants:tenant_id (
+              id,
+              name
+            )
+          ''')
+          .eq('user_id', userId);
+
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      debugPrint('❌ Error getting user tenants: $e');
+      return [];
     }
   }
 }

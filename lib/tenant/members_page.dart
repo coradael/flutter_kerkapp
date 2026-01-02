@@ -28,6 +28,7 @@ class _MembersPageState extends State<MembersPage> {
 
   Future<void> _checkAdminAndLoadMembers() async {
     final user = _authService.currentUser;
+    
     if (user != null) {
       final isAdmin = await _userTenantService.isUserAdmin(user.id, widget.tenantId);
       setState(() => _isAdmin = isAdmin);
@@ -37,6 +38,8 @@ class _MembersPageState extends State<MembersPage> {
       } else {
         setState(() => _loading = false);
       }
+    } else {
+      setState(() => _loading = false);
     }
   }
 

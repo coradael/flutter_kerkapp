@@ -11,30 +11,40 @@ class EventCommentService {
     try {
       final response = await _supabase
           .from('event_comments')
-          .select('''
-            *,
-            profiles:user_id (
-              email,
-              full_name
-            )
-          ''')
+          .select()
           .eq('event_id', eventId)
           .order('created_at', ascending: true);
 
-      return (response as List).map((json) {
+      // Fetch user info for each comment
+      final comments = <EventComment>[];
+      for (final json in response as List) {
         final comment = EventComment.fromJson(json);
-        final profile = json['profiles'];
-        return EventComment(
-          id: comment.id,
-          eventId: comment.eventId,
-          userId: comment.userId,
-          commentText: comment.commentText,
-          createdAt: comment.createdAt,
-          updatedAt: comment.updatedAt,
-          userEmail: profile?['email'],
-          userName: profile?['full_name'] ?? 'Gebruiker',
-        );
-      }).toList();
+        
+        // Get user profile
+        try {
+          final profile = await _supabase
+              .from('profiles')
+              .select('email, full_name')
+              .eq('id', comment.userId)
+              .maybeSingle();
+          
+          comments.add(EventComment(
+            id: comment.id,
+            eventId: comment.eventId,
+            userId: comment.userId,
+            commentText: comment.commentText,
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt,
+            userEmail: profile?['email'],
+            userName: profile?['full_name'] ?? profile?['email'] ?? 'Gebruiker',
+          ));
+        } catch (e) {
+          // If profile fetch fails, add comment without user info
+          comments.add(comment);
+        }
+      }
+      
+      return comments;
     } catch (e) {
       debugPrint('Error getting comments: $e');
       return [];

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/local_storage_service.dart';
 import '../tenant/user_tenant_service.dart';
@@ -59,26 +58,16 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gemeenschap'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadMembers,
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _members.isEmpty
-              ? const Center(
-                  child: Text('Geen leden gevonden'),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadMembers,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(8),
+    return _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _members.isEmpty
+            ? const Center(
+                child: Text('Geen leden gevonden'),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadMembers,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(8),
                     itemCount: _members.length,
                     itemBuilder: (context, index) {
                       final member = _members[index];
@@ -193,7 +182,6 @@ class _CommunityPageState extends State<CommunityPage> {
                       );
                     },
                   ),
-                ),
-    );
+                );
   }
 }

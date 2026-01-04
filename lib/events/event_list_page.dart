@@ -115,24 +115,25 @@ class _EventListPageState extends State<EventListPage> {
                           children: [
                             // Toon foto als er een is
                             if (hasImage) ...[
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12),
-                                ),
-                                child: Image.network(
-                                  EventStorageService().getFileUrl(firstImage!.filePath)!,
-                                  height: 200,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 200,
-                                      color: Colors.grey.shade200,
-                                      child: const Center(
-                                        child: Icon(Icons.broken_image, size: 50),
-                                      ),
-                                    );
-                                  },
+                              Center(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: Image.network(
+                                    EventStorageService().getFileUrl(firstImage!.filePath)!,
+                                    height: 200,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 200,
+                                        color: Colors.grey.shade200,
+                                        child: const Center(
+                                          child: Icon(Icons.broken_image, size: 50),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ],

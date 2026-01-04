@@ -9,6 +9,8 @@ class Event {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<EventFile>? files;
+  final String? creatorName;
+  final String? creatorAvatar;
 
   Event({
     required this.id,
@@ -21,6 +23,8 @@ class Event {
     required this.createdAt,
     required this.updatedAt,
     this.files,
+    this.creatorName,
+    this.creatorAvatar,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,8 @@ class Event {
               .map((file) => EventFile.fromJson(file))
               .toList()
           : null,
+      creatorName: json['creator_name'] as String?,
+      creatorAvatar: json['creator_avatar'] as String?,
     );
   }
 

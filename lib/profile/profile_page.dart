@@ -209,72 +209,73 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profiel'),
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: _startEditing,
-            ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              await _authService.signOut();
-              scaffoldMessenger.showSnackBar(
-                const SnackBar(content: Text('Uitgelogd')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  // Avatar
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundImage: _profile?.avatarUrl != null
-                            ? NetworkImage(
-                                _storageService.getAvatarUrl(_profile!.avatarUrl)!,
-                              )
-                            : null,
-                        child: _profile?.avatarUrl == null
-                            ? const Icon(Icons.person, size: 60)
-                            : null,
+    return _loading
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (!_isEditing)
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: _startEditing,
+                        tooltip: 'Bewerken',
                       ),
-                      if (_uploading)
-                        const Positioned.fill(
-                          child: CircularProgressIndicator(),
-                        ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: CircleAvatar(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          child: IconButton(
-                            icon: const Icon(Icons.camera_alt, color: Colors.white),
-                            onPressed: _uploading ? null : _pickAndUploadAvatar,
-                          ),
+                    IconButton(
+                      icon: const Icon(Icons.logout),
+                      onPressed: () async {
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        await _authService.signOut();
+                        scaffoldMessenger.showSnackBar(
+                          const SnackBar(content: Text('Uitgelogd')),
+                        );
+                      },
+                      tooltip: 'Uitloggen',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Avatar
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: _profile?.avatarUrl != null
+                          ? NetworkImage(
+                              _storageService.getAvatarUrl(_profile!.avatarUrl)!,
+                            )
+                          : null,
+                      child: _profile?.avatarUrl == null
+                          ? const Icon(Icons.person, size: 60)
+                          : null,
+                    ),
+                    if (_uploading)
+                      const Positioned.fill(
+                        child: CircularProgressIndicator(),
+                      ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt, color: Colors.white),
+                          onPressed: _uploading ? null : _pickAndUploadAvatar,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  // Profile info - Edit mode of View mode
-                  _isEditing ? _buildEditForm() : _buildProfileInfo(),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                // Profile info - Edit mode of View mode
+                _isEditing ? _buildEditForm() : _buildProfileInfo(),
+              ],
             ),
-    );
+          );
   }
 
   Widget _buildProfileInfo() {

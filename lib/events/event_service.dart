@@ -15,9 +15,32 @@ class EventService {
           .eq('tenant_id', tenantId)
           .order('created_at', ascending: false);
 
-      return (response as List)
-          .map((json) => Event.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final List<Event> events = [];
+      
+      for (final json in response as List) {
+        final createdBy = json['created_by'] as String;
+        
+        // Get creator profile info
+        final profileResponse = await _supabase
+            .from('profiles')
+            .select('full_name, avatar_url, email')
+            .eq('id', createdBy)
+            .maybeSingle();
+        
+        // Use full_name if available, otherwise use email
+        String? creatorName = profileResponse?['full_name'] as String?;
+        if (creatorName == null || creatorName.isEmpty) {
+          creatorName = profileResponse?['email'] as String?;
+        }
+        
+        events.add(Event.fromJson({
+          ...json,
+          'creator_name': creatorName,
+          'creator_avatar': profileResponse?['avatar_url'],
+        }));
+      }
+      
+      return events;
     } catch (e) {
       debugPrint('Error getting tenant events: $e');
       return [];

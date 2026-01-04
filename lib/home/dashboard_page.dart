@@ -7,6 +7,7 @@ import '../services/local_storage_service.dart';
 import '../bible/bible_page.dart';
 import '../settings/debug_page.dart';
 import '../community/community_page.dart';
+import '../feed/feed_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -22,6 +23,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isAdmin = false;
   bool _checkingAdmin = true;
   String? _tenantId;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -53,120 +55,123 @@ class _DashboardPageState extends State<DashboardPage> {
       );
     }
 
+    final pages = [
+      const FeedPage(),
+      const CommunityPage(),
+    ];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kerk App Dashboard'),
+        title: Text(_currentIndex == 0 ? 'My Church' : 'Gemeenschap'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Herlaad Admin Status',
+            icon: const Icon(Icons.dashboard),
+            tooltip: 'Menu',
             onPressed: () {
-              _checkIfAdmin();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => _MenuPage(
+                  isAdmin: _isAdmin,
+                  tenantId: _tenantId,
+                )),
+              );
             },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          children: [
-            _DashboardCard(
-              icon: Icons.event,
-              title: 'Evenementen',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const EventListPage()),
-                );
-              },
-            ),
-            if (_isAdmin && _tenantId != null)
-              _DashboardCard(
-                icon: Icons.people,
-                title: 'Leden',
-                color: Colors.orange,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MembersPage(tenantId: _tenantId!),
-                    ),
-                  );
-                },
-              ),
-            _DashboardCard(
-              icon: Icons.book,
-              title: 'Bijbel',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BiblePage()),
-                );
-              },
-            ),
-            _DashboardCard(
-              icon: Icons.people_outline,
-              title: 'Gemeenschap',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CommunityPage()),
-                );
-              },
-            ),
-            _DashboardCard(
-              icon: Icons.settings,
-              title: 'Instellingen',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DebugPage()),
-                );
-              },
-            ),
-          ],
-        ),
+      body: pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Community',
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DashboardCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Color? color;
+class _MenuPage extends StatelessWidget {
+  final bool isAdmin;
+  final String? tenantId;
 
-  const _DashboardCard({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.color,
+  const _MenuPage({
+    required this.isAdmin,
+    required this.tenantId,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      color: color?.withValues(alpha: 0.1),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: color,
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Menu'),
+      ),
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.event),
+            title: const Text('Evenementen'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EventListPage()),
+              );
+            },
+          ),
+          if (isAdmin && tenantId != null)
+            ListTile(
+              leading: const Icon(Icons.people, color: Colors.orange),
+              title: const Text('Leden Beheren'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MembersPage(tenantId: tenantId!),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ListTile(
+            leading: const Icon(Icons.people_outline),
+            title: const Text('Gemeenschap'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CommunityPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.book),
+            title: const Text('Bijbel'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BiblePage()),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Instellingen'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DebugPage()),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

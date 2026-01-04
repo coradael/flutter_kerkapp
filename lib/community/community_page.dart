@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/local_storage_service.dart';
 import '../tenant/user_tenant_service.dart';
 import '../services/storage_service.dart';
+import '../profile/view_profile_page.dart';
+import '../auth/auth_service.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -14,6 +17,7 @@ class _CommunityPageState extends State<CommunityPage> {
   final _userTenantService = UserTenantService();
   final _localStorage = LocalStorageService();
   final _storageService = StorageService();
+  final _authService = AuthService();
 
   List<Map<String, dynamic>> _members = [];
   bool _loading = true;
@@ -35,11 +39,20 @@ class _CommunityPageState extends State<CommunityPage> {
 
     try {
       final members = await _userTenantService.getTenantMembers(tenantId);
+      debugPrint('📊 CommunityPage - Loaded ${members.length} members');
+      
+      // Debug: print member data
+      for (final member in members) {
+        debugPrint('👤 Member: ${member['email']}');
+        debugPrint('   Profiles data: ${member['profiles']}');
+      }
+      
       setState(() {
         _members = members;
         _loading = false;
       });
     } catch (e) {
+      debugPrint('❌ CommunityPage - Error: $e');
       setState(() => _loading = false);
     }
   }
@@ -69,7 +82,7 @@ class _CommunityPageState extends State<CommunityPage> {
                     itemCount: _members.length,
                     itemBuilder: (context, index) {
                       final member = _members[index];
-                      final profile = member['profile'] as Map<String, dynamic>?;
+                      final profile = member['profiles'] as Map<String, dynamic>?;
                       final role = member['role'] as String? ?? 'member';
                       final isActive = member['is_active'] as bool? ?? false;
 
@@ -81,10 +94,21 @@ class _CommunityPageState extends State<CommunityPage> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ViewProfilePage(
+                                  member: member,
+                                  isCurrentUser: _authService.currentUser?.id == profile?['id'],
+                                ),
+                              ),
+                            );
+                          },
                           leading: CircleAvatar(
                             backgroundColor: role == 'admin' ? Colors.orange : Colors.blue,
-                            backgroundImage: avatarUrl != null
-                                ? NetworkImage(_storageService.getAvatarUrl(avatarUrl!))
+                            backgroundImage: avatarUrl != null && _storageService.getAvatarUrl(avatarUrl) != null
+                                ? NetworkImage(_storageService.getAvatarUrl(avatarUrl)!)
                                 : null,
                             child: avatarUrl == null
                                 ? Text(
@@ -96,7 +120,7 @@ class _CommunityPageState extends State<CommunityPage> {
                                 : null,
                           ),
                           title: Text(
-                            fullName ?? 'Niet geverifieerd',
+                            fullName ?? email ?? 'Geen naam',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Column(

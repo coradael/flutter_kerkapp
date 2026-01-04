@@ -20,11 +20,15 @@ class UserTenantService {
         final userId = userTenant['user_id'];
         final email = userTenant['email'];
         
+        debugPrint('🔍 Querying profile for user: $userId');
+        
         final profileResponse = await _supabase
             .from('profiles')
             .select('id, email, full_name, phone_number, avatar_url, role')
             .eq('id', userId)
             .maybeSingle();
+        
+        debugPrint('📦 Profile response: $profileResponse');
         
         if (profileResponse != null) {
           membersWithProfiles.add({
@@ -32,13 +36,13 @@ class UserTenantService {
             'profiles': profileResponse,
           });
         } else {
-          // User has no profile yet (not verified), show with email from user_tenants
+          // User has no profile yet, show with email from user_tenants
           membersWithProfiles.add({
             ...userTenant,
             'profiles': {
               'id': userId,
               'email': email,
-              'full_name': 'Niet geverifieerd',
+              'full_name': null, // Will show email instead
               'phone_number': null,
               'avatar_url': null,
               'role': null,

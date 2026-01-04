@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../auth/auth_service.dart';
 import '../services/storage_service.dart';
+import '../profile/view_profile_page.dart';
 import 'user_tenant_service.dart';
 
 class MembersPage extends StatefulWidget {
@@ -32,12 +33,7 @@ class _MembersPageState extends State<MembersPage> {
     if (user != null) {
       final isAdmin = await _userTenantService.isUserAdmin(user.id, widget.tenantId);
       setState(() => _isAdmin = isAdmin);
-      
-      if (isAdmin) {
-        await _loadMembers();
-      } else {
-        setState(() => _loading = false);
-      }
+      await _loadMembers(); // Load members for everyone
     } else {
       setState(() => _loading = false);
     }
@@ -233,30 +229,18 @@ class _MembersPageState extends State<MembersPage> {
       appBar: AppBar(
         title: const Text('Leden'),
         actions: [
-          if (_isAdmin)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadMembers,
-            ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadMembers,
+          ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : !_isAdmin
+          : _members.isEmpty
               ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'Je hebt geen toegang tot deze pagina.\nAlleen admins kunnen leden beheren.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
+                  child: Text('Geen leden gevonden'),
                 )
-              : _members.isEmpty
-                  ? const Center(
-                      child: Text('Geen leden gevonden'),
-                    )
                   : RefreshIndicator(
                       onRefresh: _loadMembers,
                       child: ListView.builder(
@@ -281,6 +265,17 @@ class _MembersPageState extends State<MembersPage> {
                             child: Opacity(
                               opacity: isActive ? 1.0 : 0.5,
                               child: ListTile(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ViewProfilePage(
+                                        member: member,
+                                        isCurrentUser: _authService.currentUser?.id == userId,
+                                      ),
+                                    ),
+                                  );
+                                },
                                 leading: Stack(
                                   children: [
                                     CircleAvatar(
@@ -375,7 +370,7 @@ class _MembersPageState extends State<MembersPage> {
                                     ),
                                   ],
                                 ),
-                                trailing: _authService.currentUser?.id != userId
+                                trailing: _isAdmin && _authService.currentUser?.id != userId
                                     ? PopupMenuButton<String>(
                                         onSelected: (value) {
                                           if (value == 'change_role') {
@@ -446,13 +441,15 @@ class _MembersPageState extends State<MembersPage> {
                                           ),
                                         ],
                                       )
-                                    : Chip(
-                                        label: const Text(
-                                          'Jij',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                        backgroundColor: Colors.green.withValues(alpha: 0.2),
-                                      ),
+                                    : _authService.currentUser?.id == userId
+                                        ? Chip(
+                                            label: const Text(
+                                              'Jij',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                            backgroundColor: Colors.green.withValues(alpha: 0.2),
+                                          )
+                                        : null, // No menu for non-admins viewing others
                               ),
                             ),
                           );

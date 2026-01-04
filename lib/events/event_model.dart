@@ -58,8 +58,6 @@ class Event {
       'description': description,
       'event_date': eventDate?.toIso8601String(),
       'location': location,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
     };
     
     // Only include id if it's not empty (for updates)

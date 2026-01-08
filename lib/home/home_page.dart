@@ -26,6 +26,13 @@ class _HomePageState extends State<HomePage> {
   String? _tenantId;
   int _selectedIndex = 0;
 
+  // Keep pages in memory to avoid reloading
+  final List<Widget> _pages = const [
+    FeedPage(),
+    CommunityPage(),
+    ProfilePage(),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -69,12 +76,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    final List<Widget> pages = [
-      const FeedPage(),
-      const CommunityPage(),
-      const ProfilePage(),
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_getTitle()),
@@ -94,7 +95,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {

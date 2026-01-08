@@ -34,6 +34,7 @@ class _FeedPageState extends State<FeedPage> {
   String? _tenantId;
   final Set<String> _likedPosts = {};
   final Set<String> _likedEvents = {};
+  final Map<String, int> _postCommentCounts = {};
   final Map<String, int> _eventLikeCounts = {};
   final Map<String, int> _eventCommentCounts = {};
 
@@ -60,6 +61,7 @@ class _FeedPageState extends State<FeedPage> {
     final user = _authService.currentUser;
     if (user != null) {
       for (final post in posts) {
+        _postCommentCounts[post.id] = post.commentCount;
         final liked = await _postService.hasUserLiked(post.id, user.id);
         if (liked) {
           _likedPosts.add(post.id);
@@ -292,9 +294,12 @@ class _FeedPageState extends State<FeedPage> {
               ),
               title: Row(
                 children: [
-                  Text(
-                    event.creatorName ?? 'Onbekend',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  Flexible(
+                    child: Text(
+                      event.creatorName ?? 'Onbekend',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -418,13 +423,18 @@ class _FeedPageState extends State<FeedPage> {
                   const SizedBox(width: 16),
                   IconButton(
                     icon: const Icon(Icons.comment_outlined),
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final newCount = await Navigator.push<int>(
                         context,
                         MaterialPageRoute(
                           builder: (_) => EventDetailPage(event: event),
                         ),
-                      ).then((_) => _loadFeed());
+                      );
+                      if (newCount != null) {
+                        setState(() {
+                          _eventCommentCounts[event.id] = newCount;
+                        });
+                      }
                     },
                   ),
                   Text('${_eventCommentCounts[event.id] ?? 0}'),
@@ -445,14 +455,17 @@ class _FeedPageState extends State<FeedPage> {
     
     if (isLiked) {
       await _eventCommentService.unlikeEvent(event.id, user.id);
-      setState(() => _likedEvents.remove(event.id));
+      setState(() {
+        _likedEvents.remove(event.id);
+        _eventLikeCounts[event.id] = (_eventLikeCounts[event.id] ?? 1) - 1;
+      });
     } else {
       await _eventCommentService.likeEvent(event.id, user.id);
-      setState(() => _likedEvents.add(event.id));
+      setState(() {
+        _likedEvents.add(event.id);
+        _eventLikeCounts[event.id] = (_eventLikeCounts[event.id] ?? 0) + 1;
+      });
     }
-    
-    // Reload feed to update counts
-    _loadFeed();
   }
 
   Widget _buildPostCard(Post post) {
@@ -532,16 +545,20 @@ class _FeedPageState extends State<FeedPage> {
                 IconButton(
                   icon: const Icon(Icons.comment_outlined),
                   onPressed: () async {
-                    await Navigator.push(
+                    final newCount = await Navigator.push<int>(
                       context,
                       MaterialPageRoute(
                         builder: (_) => CommentsPage(post: post),
                       ),
                     );
-                    _loadFeed(); // Refresh to update comment count
+                    if (newCount != null) {
+                      setState(() {
+                        _postCommentCounts[post.id] = newCount;
+                      });
+                    }
                   },
                 ),
-                Text('${post.commentCount}'),
+                Text('${_postCommentCounts[post.id] ?? post.commentCount}'),
               ],
             ),
           ),

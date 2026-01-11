@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'post_model.dart';
 
 class PostService {
@@ -69,6 +70,7 @@ class PostService {
     required String userId,
     required String content,
     XFile? image,
+    PlatformFile? file,
   }) async {
     try {
       String? imageUrl;
@@ -83,6 +85,17 @@ class PostService {
         await _supabase.storage
             .from('posts')
             .uploadBinary(filePath, bytes);
+
+        imageUrl = _supabase.storage.from('posts').getPublicUrl(filePath);
+      }
+      // Upload file if provided
+      else if (file != null && file.bytes != null) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final filePath = '$tenantId/$userId/$timestamp.${file.extension}';
+
+        await _supabase.storage
+            .from('posts')
+            .uploadBinary(filePath, file.bytes!);
 
         imageUrl = _supabase.storage.from('posts').getPublicUrl(filePath);
       }
@@ -206,12 +219,50 @@ class PostService {
   }
 
   // Add a comment
-  Future<bool> addComment(String postId, String userId, String commentText) async {
+  Future<bool> addComment(
+    String postId,
+    String userId,
+    String commentText, {
+    XFile? image,
+    PlatformFile? file,
+  }) async {
     try {
+      String? attachmentUrl;
+      String? attachmentType;
+
+      // Upload image if provided
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final fileExt = image.path.split('.').last;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final filePath = 'comments/$userId/$timestamp.$fileExt';
+
+        await _supabase.storage
+            .from('posts')
+            .uploadBinary(filePath, bytes);
+
+        attachmentUrl = _supabase.storage.from('posts').getPublicUrl(filePath);
+        attachmentType = 'image';
+      }
+      // Upload file if provided
+      else if (file != null && file.bytes != null) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final filePath = 'comments/$userId/$timestamp.${file.extension}';
+
+        await _supabase.storage
+            .from('posts')
+            .uploadBinary(filePath, file.bytes!);
+
+        attachmentUrl = _supabase.storage.from('posts').getPublicUrl(filePath);
+        attachmentType = 'file';
+      }
+
       await _supabase.from('post_comments').insert({
         'post_id': postId,
         'user_id': userId,
         'comment_text': commentText,
+        'attachment_url': attachmentUrl,
+        'attachment_type': attachmentType,
       });
       return true;
     } catch (e) {
@@ -221,8 +272,15 @@ class PostService {
   }
 
   // Delete a comment
-  Future<bool> deleteComment(String commentId) async {
+  Future<bool> deleteComment(String commentId, String? attachmentUrl) async {
     try {
+      // Delete attachment from storage if exists
+      if (attachmentUrl != null) {
+        final uri = Uri.parse(attachmentUrl);
+        final path = uri.pathSegments.skip(4).join('/');
+        await _supabase.storage.from('posts').remove([path]);
+      }
+
       await _supabase.from('post_comments').delete().eq('id', commentId);
       return true;
     } catch (e) {

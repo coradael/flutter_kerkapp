@@ -204,6 +204,35 @@ class _EventDetailPageState extends State<EventDetailPage> {
     }
   }
 
+  void _showFullscreenImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,36 +313,24 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     ? Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              url,
-                              height: 300,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  height: 200,
-                                  color: Colors.grey.shade200,
-                                  child: const Center(
-                                    child: Icon(Icons.broken_image, size: 50),
-                                  ),
-                                );
-                              },
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  height: 200,
-                                  color: Colors.grey.shade200,
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                          : null,
+                          child: GestureDetector(
+                            onTap: () => _showFullscreenImage(url),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                url,
+                                height: 300,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 200,
+                                    color: Colors.grey.shade200,
+                                    child: const Center(
+                                      child: Icon(Icons.broken_image, size: 50),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ),

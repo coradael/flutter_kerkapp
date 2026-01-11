@@ -29,6 +29,9 @@ dependencies:
   # Local storage
   shared_preferences: ^2.2.2
 
+  # HTTP requests for Bible API
+  http: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -37,3 +40,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/bible/nld_svv.json
+    - assets/bible/kjv.json
+    - assets/bible/rvr.json

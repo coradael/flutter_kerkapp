@@ -1,5 +1,7 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../auth/auth_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/storage_service.dart';
@@ -173,6 +175,35 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
+  void _showFullscreenImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -331,21 +362,29 @@ class _FeedPageState extends State<FeedPage> {
             // Event image
             if (hasImage)
               Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    _eventStorageService.getFileUrl(firstImage!.filePath)!,
-                    height: 300,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: GestureDetector(
+                    onTap: () => _showFullscreenImage(_eventStorageService.getFileUrl(firstImage!.filePath)!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
                         height: 300,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(Icons.broken_image, size: 50),
+                        width: double.infinity,
+                        child: Image.network(
+                          _eventStorageService.getFileUrl(firstImage!.filePath)!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: Icon(Icons.broken_image, size: 50),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -476,93 +515,126 @@ class _FeedPageState extends State<FeedPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with user info
-          ListTile(
-            leading: CircleAvatar(
-              backgroundImage: post.userAvatar != null
-                  ? NetworkImage(_storageService.getAvatarUrl(post.userAvatar!)!)
+      child: InkWell(
+        onTap: () async {
+          final newCount = await Navigator.push<int>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CommentsPage(post: post),
+            ),
+          );
+          if (newCount != null) {
+            setState(() {
+              _postCommentCounts[post.id] = newCount;
+            });
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with user info
+            ListTile(
+              leading: CircleAvatar(
+                backgroundImage: post.userAvatar != null
+                    ? NetworkImage(_storageService.getAvatarUrl(post.userAvatar!)!)
+                    : null,
+                child: post.userAvatar == null
+                    ? Text((post.userName ?? 'U')[0].toUpperCase())
+                    : null,
+              ),
+              title: Text(
+                post.userName ?? 'Onbekend',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(_formatTime(post.createdAt)),
+              trailing: isOwnPost
+                  ? IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () => _deletePost(post),
+                    )
                   : null,
-              child: post.userAvatar == null
-                  ? Text((post.userName ?? 'U')[0].toUpperCase())
-                  : null,
             ),
-            title: Text(
-              post.userName ?? 'Onbekend',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            // Content
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                post.content,
+                style: const TextStyle(fontSize: 15),
+              ),
             ),
-            subtitle: Text(_formatTime(post.createdAt)),
-            trailing: isOwnPost
-                ? IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () => _deletePost(post),
-                  )
-                : null,
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              post.content,
-              style: const TextStyle(fontSize: 15),
-            ),
-          ),
-          // Image if exists
-          if (post.imageUrl != null) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  post.imageUrl!,
-                  height: 300,
-                  fit: BoxFit.contain,
+            // Image if exists
+            if (post.imageUrl != null) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: GestureDetector(
+                    onTap: () => _showFullscreenImage(post.imageUrl!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        height: 300,
+                        width: double.infinity,
+                        child: Image.network(
+                          post.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: Icon(Icons.broken_image, size: 50),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            // Like and comment buttons
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      _likedPosts.contains(post.id)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: _likedPosts.contains(post.id)
+                          ? Colors.red
+                          : null,
+                    ),
+                    onPressed: () => _toggleLike(post),
+                  ),
+                  Text('${post.likeCount}'),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.comment_outlined),
+                    onPressed: () async {
+                      final newCount = await Navigator.push<int>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CommentsPage(post: post),
+                        ),
+                      );
+                      if (newCount != null) {
+                        setState(() {
+                          _postCommentCounts[post.id] = newCount;
+                        });
+                      }
+                    },
+                  ),
+                  Text('${_postCommentCounts[post.id] ?? post.commentCount}'),
+                ],
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          // Like and comment buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    _likedPosts.contains(post.id)
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    color: _likedPosts.contains(post.id)
-                        ? Colors.red
-                        : null,
-                  ),
-                  onPressed: () => _toggleLike(post),
-                ),
-                Text('${post.likeCount}'),
-                const SizedBox(width: 16),
-                IconButton(
-                  icon: const Icon(Icons.comment_outlined),
-                  onPressed: () async {
-                    final newCount = await Navigator.push<int>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CommentsPage(post: post),
-                      ),
-                    );
-                    if (newCount != null) {
-                      setState(() {
-                        _postCommentCounts[post.id] = newCount;
-                      });
-                    }
-                  },
-                ),
-                Text('${_postCommentCounts[post.id] ?? post.commentCount}'),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -588,6 +660,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final _picker = ImagePicker();
   
   XFile? _selectedImage;
+  PlatformFile? _selectedFile;
   bool _posting = false;
 
   @override
@@ -598,13 +671,31 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _pickImage() async {
     final image = await _picker.pickImage(source: ImageSource.gallery);
-    setState(() => _selectedImage = image);
+    if (image != null) {
+      setState(() {
+        _selectedImage = image;
+        _selectedFile = null;
+      });
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _selectedFile = result.files.first;
+        _selectedImage = null;
+      });
+    }
   }
 
   Future<void> _post() async {
-    if (_contentController.text.trim().isEmpty) {
+    if (_contentController.text.trim().isEmpty && _selectedImage == null && _selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Schrijf iets om te delen')),
+        const SnackBar(content: Text('Schrijf iets of voeg een bijlage toe')),
       );
       return;
     }
@@ -616,6 +707,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       userId: widget.userId,
       content: _contentController.text.trim(),
       image: _selectedImage,
+      file: _selectedFile,
     );
 
     setState(() => _posting = false);
@@ -671,11 +763,24 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      _selectedImage!.path,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
+                    child: FutureBuilder<Uint8List>(
+                      future: _selectedImage!.readAsBytes(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Image.memory(
+                            snapshot.data!,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          );
+                        }
+                        return Container(
+                          width: double.infinity,
+                          height: 200,
+                          color: Colors.grey.shade200,
+                          child: const Center(child: CircularProgressIndicator()),
+                        );
+                      },
                     ),
                   ),
                   Positioned(
@@ -692,6 +797,32 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 ],
               ),
             ],
+            if (_selectedFile != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.attach_file, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _selectedFile!.name,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => setState(() => _selectedFile = null),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const Spacer(),
             Row(
               children: [
@@ -700,6 +831,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   onPressed: _pickImage,
                 ),
                 const Text('Foto toevoegen'),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.attach_file),
+                  onPressed: _pickFile,
+                ),
+                const Text('Document toevoegen'),
               ],
             ),
           ],

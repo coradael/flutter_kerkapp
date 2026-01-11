@@ -107,23 +107,15 @@ class _CommentsPageState extends State<CommentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          // Return the current comment count
-          Navigator.of(context).pop(_comments.length);
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Comments'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context, _comments.length),
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Comments'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, _comments.length),
         ),
-        body: Column(
+      ),
+      body: Column(
         children: [
           // Original post
           Card(
@@ -282,7 +274,6 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
           ),
         ],
-      ),
       ),
     );
   }

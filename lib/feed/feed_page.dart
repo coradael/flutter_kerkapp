@@ -365,14 +365,14 @@ class _FeedPageState extends State<FeedPage> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: GestureDetector(
-                    onTap: () => _showFullscreenImage(_eventStorageService.getFileUrl(firstImage!.filePath)!),
+                    onTap: () => _showFullscreenImage(_eventStorageService.getFileUrl(firstImage?.filePath ?? '')!),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: SizedBox(
                         height: 300,
                         width: double.infinity,
                         child: Image.network(
-                          _eventStorageService.getFileUrl(firstImage!.filePath)!,
+                          _eventStorageService.getFileUrl(firstImage?.filePath ?? '')!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(

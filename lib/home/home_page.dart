@@ -9,6 +9,7 @@ import '../auth/auth_service.dart';
 import '../services/local_storage_service.dart';
 import '../bible/bible_page.dart';
 import '../settings/debug_page.dart';
+import '../calendar/calendar_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = const [
     FeedPage(),
     CommunityPage(),
+    CalendarPage(),
     ProfilePage(),
   ];
 
@@ -62,6 +64,8 @@ class _HomePageState extends State<HomePage> {
       case 1:
         return 'Community';
       case 2:
+        return 'Kalender';
+      case 3:
         return 'Profiel';
       default:
         return 'My Church';
@@ -101,6 +105,7 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
@@ -114,6 +119,10 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: 'Community',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Kalender',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

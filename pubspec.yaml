@@ -32,6 +32,9 @@ dependencies:
   # HTTP requests for Bible API
   http: ^1.2.0
 
+  # Calendar
+  table_calendar: ^3.0.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

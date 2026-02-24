@@ -12,7 +12,6 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = AuthService();
     final localStorage = LocalStorageService();
-
     return StreamBuilder(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
